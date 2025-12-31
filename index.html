@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceHub - Your Complete Financial Partner</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <meta http-equiv="Content-Security-Policy"
+content="
+default-src 'self';
+script-src 'self' 'unsafe-inline' 'unsafe-eval'
+    https://cdn.jsdelivr.net
+    https://www.gstatic.com
+    https://www.googleapis.com
+    https://apis.google.com;
+style-src 'self' 'unsafe-inline'
+    https://cdnjs.cloudflare.com
+    https://fonts.googleapis.com
+    https://cdn.jsdelivr.net;
+font-src 'self'
+    https://cdnjs.cloudflare.com
+    https://fonts.gstatic.com
+    https://cdn.jsdelivr.net;
+img-src 'self' data: https:;
+connect-src
+    'self'
+    http://127.0.0.1:5500
+    http://localhost:5500
+    https://fmp-proxy.swapnil-fmp.workers.dev
+    https://*.workers.dev
+    https://financialmodelingprep.com
+    https://www.googleapis.com
+    https://identitytoolkit.googleapis.com
+    https://securetoken.googleapis.com
+    https://firestore.googleapis.com
+    https://www.gstatic.com;
+frame-src
+    https://accounts.google.com
+    https://*.firebaseapp.com
+    https://*.googleusercontent.com;
+">
+    <link rel="icon" href="data:,">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+</head>
+<body>
+    <!-- Toast Notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Landing Page -->
+    <div id="landing-page" class="page active">
+        <header class="landing-header">
+            <nav class="container">
+                <div class="nav-brand">
+                    <i class="fas fa-chart-line"></i>
+                    <span>FinanceHub</span>
+                </div>
+                <div class="nav-actions">
+                    <button class="btn btn--outline" onclick="showLogin()">Login</button>
+                    <button class="btn btn--primary" onclick="showSignup()">Get Started</button>
+                    <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <div class="container">
+                <div class="hero-content">
+                    <h1>Take Control of Your Financial Future</h1>
+                    <p>Track real-time stock data, manage your portfolio, and achieve your financial goals with our comprehensive platform powered by live market data.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn--primary btn--lg" onclick="showSignup()">Start Your Journey</button>
+                        <button class="btn btn--outline btn--lg" onclick="showDemo()">View Demo</button>
+                    </div>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <h3>$2.5B+</h3>
+                        <p>Assets Under Management</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>500K+</h3>
+                        <p>Active Users</p>
+                    </div>
+                    <div class="stat-item">
+                        <h3>99.9%</h3>
+                        <p>Uptime</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2>Everything You Need to Manage Your Money</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <h3>Real-Time Portfolio Tracking</h3>
+                        <p>Monitor your investments with live market data from multiple financial APIs including Alpha Vantage and FMP.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-search-dollar"></i>
+                        </div>
+                        <h3>Stock Research & Analysis</h3>
+                        <p>Access comprehensive stock data, company profiles, financial statements, and market news.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Advanced Analytics</h3>
+                        <p>Interactive charts, technical indicators, and portfolio performance metrics to guide your decisions.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Secure & Reliable</h3>
+                        <p>Your data is protected with Firebase authentication and bank-level security measures.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Authentication Modal -->
+    <div id="auth-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeAuthModal()"></div>
+        <div class="modal-content">
+            <!-- Login Form -->
+            <div id="login-form" class="auth-form">
+                <div class="auth-header">
+                    <h2>Welcome Back</h2>
+                    <button class="modal-close" onclick="closeAuthModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="login-email">Email</label>
+                        <input type="email" id="login-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width" id="login-btn">
+                        <span id="login-btn-text">Sign In</span>
+                        <i id="login-spinner" class="fas fa-spinner fa-spin hidden"></i>
+                    </button>
+                </form>
+                <div class="auth-links">
+                    <a href="#" onclick="showPasswordReset()">Forgot Password?</a>
+                </div>
+                <p class="auth-switch">Don't have an account? <a href="#" onclick="showSignupForm()">Sign up</a></p>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signup-form" class="auth-form hidden">
+                <div class="auth-header">
+                    <h2>Create Account</h2>
+                    <button class="modal-close" onclick="closeAuthModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <form onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="signup-name">Full Name</label>
+                        <input type="text" id="signup-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="signup-email">Email</label>
+                        <input type="email" id="signup-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="signup-password">Password</label>
+                        <input type="password" id="signup-password" class="form-control" required>
+                        <div id="password-strength" class="password-strength">
+                            <div class="strength-bar">
+                                <div class="strength-fill"></div>
+                            </div>
+                            <span class="strength-text">Enter a password</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width" id="signup-btn">
+                        <span id="signup-btn-text">Create Account</span>
+                        <i id="signup-spinner" class="fas fa-spinner fa-spin hidden"></i>
+                    </button>
+                </form>
+                <p class="auth-switch">Already have an account? <a href="#" onclick="showLoginForm()">Sign in</a></p>
+            </div>
+
+            <!-- Password Reset Form -->
+            <div id="password-reset-form" class="auth-form hidden">
+                <div class="auth-header">
+                    <h2>Reset Password</h2>
+                    <button class="modal-close" onclick="closeAuthModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <p>Enter your email address and we'll send you a link to reset your password.</p>
+                <form onsubmit="handlePasswordReset(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="reset-email">Email</label>
+                        <input type="email" id="reset-email" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full-width">Send Reset Link</button>
+                </form>
+                <p class="auth-switch">Remember your password? <a href="#" onclick="showLoginForm()">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="main-app" class="hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <i class="fas fa-chart-line"></i>
+                    <span>FinanceHub</span>
+                </div>
+                <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-item" data-page="stocks">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Stocks</span>
+                </a>
+                <a href="#" class="nav-item" data-page="portfolio">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Portfolio</span>
+                </a>
+                <a href="#" class="nav-item" data-page="watchlist">
+                    <i class="fas fa-eye"></i>
+                    <span>Watchlist</span>
+                </a>
+                <a href="#" class="nav-item" data-page="news">
+                    <i class="fas fa-newspaper"></i>
+                    <span>Market News</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="btn btn--outline btn--sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 id="page-title">Dashboard</h1>
+                </div>
+                <div class="topbar-right">
+                    <div class="search-box">
+                        <input type="text" id="stock-search" class="form-control" placeholder="Search stocks..." onkeyup="handleStockSearch(event)">
+                        <i class="fas fa-search"></i>
+                        <div id="search-results" class="search-results hidden"></div>
+                    </div>
+                    <button id="theme-toggle-app" class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="user-menu">
+                        <button class="user-avatar" onclick="toggleUserMenu()">
+                            <i class="fas fa-user"></i>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown hidden">
+                            <div class="user-info">
+                                <span class="user-name" id="user-name">Loading...</span>
+                                <span class="user-email" id="user-email">Loading...</span>
+                            </div>
+                            <hr>
+                            <a href="#" onclick="showPage('settings')">Settings</a>
+                            <a href="#" onclick="logout()">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <div id="dashboard-page" class="app-page active">
+                <div class="dashboard-grid">
+                    <!-- Market Indices -->
+                    <div class="widget market-indices">
+                        <div class="widget-header">
+                            <h3>Market Indices</h3>
+                            <span id="market-last-update" class="last-update">Loading...</span>
+                        </div>
+                        <div id="market-indices-list" class="market-items">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Portfolio Overview -->
+                    <div class="widget portfolio-overview">
+                        <div class="widget-header">
+                            <h3>Portfolio Performance</h3>
+                            <span id="portfolio-change" class="portfolio-change">Loading...</span>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 200px;">
+                            <canvas id="portfolio-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Top Movers -->
+                    <div class="widget top-movers">
+                        <div class="widget-header">
+                            <h3>Top Movers</h3>
+                            <div class="mover-tabs">
+                                <button class="tab-btn active" onclick="showMovers('gainers')">Gainers</button>
+                                <button class="tab-btn" onclick="showMovers('losers')">Losers</button>
+                            </div>
+                        </div>
+                        <div id="top-movers-list" class="movers-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="widget quick-actions">
+                        <div class="widget-header">
+                            <h3>Quick Actions</h3>
+                        </div>
+                        <div class="actions-grid">
+                            <button class="action-btn" onclick="showAddToWatchlist()">
+                                <i class="fas fa-plus"></i>
+                                <span>Add Stock</span>
+                            </button>
+                            <button class="action-btn" onclick="showPage('stocks')">
+                                <i class="fas fa-search"></i>
+                                <span>Search Stocks</span>
+                            </button>
+                            <button class="action-btn" onclick="showPage('news')">
+                                <i class="fas fa-newspaper"></i>
+                                <span>Market News</span>
+                            </button>
+                            <button class="action-btn" onclick="refreshAllData()">
+                                <i class="fas fa-sync-alt"></i>
+                                <span>Refresh Data</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="widget recent-activity">
+                        <div class="widget-header">
+                            <h3>Recent Activity</h3>
+                        </div>
+                        <div id="recent-activity-list" class="activity-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stocks Page -->
+            <div id="stocks-page" class="app-page">
+                <div class="stocks-grid">
+                    <div class="widget stock-search">
+                        <div class="widget-header">
+                            <h3>Stock Search</h3>
+                        </div>
+                        <div class="search-form">
+                            <div class="form-group">
+                                <input type="text" id="detailed-stock-search" class="form-control" placeholder="Enter stock symbol (e.g., AAPL, MSFT)">
+                                <button class="btn btn--primary" onclick="searchDetailedStock()">Search</button>
+                            </div>
+                        </div>
+                        <div id="stock-details" class="stock-details hidden">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="widget popular-stocks">
+                        <div class="widget-header">
+                            <h3>Popular Stocks</h3>
+                        </div>
+                        <div id="popular-stocks-list" class="stocks-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Page -->
+            <div id="portfolio-page" class="app-page">
+                <div class="portfolio-grid">
+                    <div class="widget portfolio-summary">
+                        <div class="widget-header">
+                            <h3>Portfolio Summary</h3>
+                            <div class="portfolio-stats">
+                                <span id="portfolio-total-value" class="total-value">$0.00</span>
+                                <span id="portfolio-daily-change" class="daily-change">+$0.00 (0.00%)</span>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="position: relative; height: 300px;">
+                            <canvas id="allocation-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="widget holdings-list">
+                        <div class="widget-header">
+                            <h3>Holdings</h3>
+                            <button class="btn btn--sm btn--primary" onclick="showAddToWatchlist()">Add Stock</button>
+                        </div>
+                        <div class="holdings-table">
+                            <div class="table-header">
+                                <span>Symbol</span>
+                                <span>Price</span>
+                                <span>Change</span>
+                                <span>Actions</span>
+                            </div>
+                            <div id="holdings-list">
+                                <!-- Populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watchlist Page -->
+            <div id="watchlist-page" class="app-page">
+                <div class="watchlist-grid">
+                    <div class="widget watchlist-stocks">
+                        <div class="widget-header">
+                            <h3>Your Watchlist</h3>
+                            <button class="btn btn--sm btn--primary" onclick="showAddToWatchlist()">Add Stock</button>
+                        </div>
+                        <div id="watchlist-stocks-list" class="watchlist-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- News Page -->
+            <div id="news-page" class="app-page">
+                <div class="news-grid">
+                    <div class="widget market-news">
+                        <div class="widget-header">
+                            <h3>Latest Market News</h3>
+                            <button class="btn btn--sm btn--outline" onclick="refreshNews()">Refresh</button>
+                        </div>
+                        <div id="market-news-list" class="news-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings-page" class="app-page">
+                <div class="settings-grid">
+                    <div class="widget profile-settings">
+                        <div class="widget-header">
+                            <h3>Profile Settings</h3>
+                        </div>
+                        <div class="profile-form">
+                            <div class="form-group">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" id="profile-name" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="profile-email" class="form-control" disabled>
+                            </div>
+                            <button class="btn btn--primary" onclick="updateProfile()">Save Changes</button>
+                        </div>
+                    </div>
+
+                    <div class="widget api-settings">
+                        <div class="widget-header">
+                            <h3>API Settings</h3>
+                        </div>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-label">Auto Refresh</span>
+                                    <span class="setting-description">Automatically update stock prices every 30 seconds</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="auto-refresh-toggle" onchange="toggleAutoRefresh()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-label">Push Notifications</span>
+                                    <span class="setting-description">Receive notifications for significant price changes</span>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="notifications-toggle">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="widget security-settings">
+                        <div class="widget-header">
+                            <h3>Security</h3>
+                        </div>
+                        <div class="security-actions">
+                            <button class="btn btn--outline" onclick="changePassword()">Change Password</button>
+                            <button class="btn btn--error" onclick="deleteAccount()">Delete Account</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add to Watchlist Modal -->
+    <div id="watchlist-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeWatchlistModal()"></div>
+        <div class="modal-content">
+            <div class="auth-form">
+                <div class="auth-header">
+                    <h2>Add to Watchlist</h2>
+                    <button class="modal-close" onclick="closeWatchlistModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock Symbol</label>
+                    <input type="text" id="watchlist-symbol" class="form-control" placeholder="e.g., AAPL, MSFT">
+                </div>
+                <button class="btn btn--primary btn--full-width" onclick="addToWatchlist()">Add to Watchlist</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
