@@ -28,6 +28,7 @@ let isAuthenticated = false;
 let darkMode = false;
 let autoRefresh = false;
 let refreshInterval = null;
+let lastApiSyncAt = null; // timestamp of last successful API price sync
 let userWatchlist = [];
 let userPortfolio = [];
 
@@ -1877,21 +1878,21 @@ async function fetchLivePrices() {
         for (const symbol of symbolsToUpdate) {
             const cached = sampleStocks.find(s => s.symbol === symbol);
             if (cached && cached._updatedAt && Date.now() - cached._updatedAt < PRICE_TTL) {
-                    console.debug('[fetchLivePrices] skip cached:', symbol);
-                    continue;
+                console.debug('[fetchLivePrices] skip cached:', symbol);
+                continue;
             }
-                console.debug('[fetchLivePrices] fetching:', symbol);
-                const res = await fetch(
-                    `${API_BASE}/quote?symbol=${encodeURIComponent(symbol)}`
-                );
+            console.debug('[fetchLivePrices] fetching:', symbol);
+            const res = await fetch(
+                `${API_BASE}/quote?symbol=${encodeURIComponent(symbol)}`
+            );
 
-                // debug: log upstream status + which API key the worker used (if present)
-                try {
-                    const usedKey = res.headers.get('x-fmp-key-used');
-                    if (usedKey) console.debug(`[fetchLivePrices] ${symbol} - x-fmp-key-used:`, usedKey);
-                } catch (e) {
-                    // ignore header read errors
-                }
+            // debug: log upstream status + which API key the worker used (if present)
+            try {
+                const usedKey = res.headers.get('x-fmp-key-used');
+                if (usedKey) console.debug(`[fetchLivePrices] ${symbol} - x-fmp-key-used:`, usedKey);
+            } catch (e) {
+                // ignore header read errors
+            }
 
             if (!res.ok) {
                 console.warn('[fetchLivePrices] fetch failed for', symbol, 'status=', res.status);
@@ -1946,8 +1947,8 @@ async function fetchLivePrices() {
         }
 
         refreshUIAfterPriceUpdate();
+        lastApiSyncAt = Date.now();
 
-    
     } catch (err) {
         console.error("Live price fetch failed", err);
     }
@@ -1984,15 +1985,30 @@ function startLiveClock() {
 
         timeEl.textContent = `• ${time}`;
 
+        indicator.classList.remove('live-offline', 'live-estimated');
+
+        let tooltip = 'Local device time';
+
         if (!navigator.onLine) {
-            container.classList.remove('live-estimated');
-            container.classList.add('live-offline');
+            indicator.classList.add('live-offline');
             labelEl.textContent = 'Offline';
+            tooltip = 'You are offline. Data may be stale.';
         } else {
-            container.classList.remove('live-offline');
-            container.classList.remove('live-estimated');
-            labelEl.textContent = 'Live';
+            const isStale =
+                lastApiSyncAt &&
+                Date.now() - lastApiSyncAt > PRICE_TTL * 2;
+
+            if (isStale) {
+                indicator.classList.add('live-estimated');
+                labelEl.textContent = 'Estimated';
+                tooltip = 'Showing cached data. Waiting for fresh API sync.';
+            } else {
+                labelEl.textContent = 'Live';
+                tooltip = 'Connected. Using latest available data.';
+            }
         }
+
+        container.title = tooltip;
     };
 
     window.addEventListener('offline', update);
