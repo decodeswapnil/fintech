@@ -1,3 +1,6 @@
+function isMobile(){
+  if (!isMobile()) return; return window.innerWidth <= 768; }
+
 const API_BASE = "https://fmp-proxy.swapnil-fmp.workers.dev";
 
 
@@ -35,6 +38,13 @@ let userPortfolio = [];
 // Chart.js global chart instances to prevent crashes/memory leaks
 let portfolioChartInstance = null;
 let allocationChartInstance = null;
+
+// Touch lock: Prevent scrolling/touchmove when sidebar is open
+document.addEventListener('touchmove', function (e) {
+    if (document.body.classList.contains('sidebar-open')) {
+        e.preventDefault();
+    }
+}, { passive: false });
 
 // Focus trap helpers for sidebar accessibility
 let lastFocusedElement = null;
@@ -1759,12 +1769,14 @@ function toggleSidebar(forceState = null) {
         sidebar.removeAttribute('tabindex');
 
         if (overlay) {
-            overlay.classList.remove('hidden');
+            overlay.classList.remove('hidden', 'fade-out');
+            overlay.classList.add('active');
             overlay.setAttribute('aria-hidden', 'false');
         }
 
         if (appShell) appShell.setAttribute('inert', '');
         body.classList.add('no-scroll', 'sidebar-open');
+        body.style.overflow = 'hidden';
 
         if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'true');
         if (desktopBtn) desktopBtn.setAttribute('aria-expanded', 'true');
@@ -1783,12 +1795,19 @@ function toggleSidebar(forceState = null) {
         sidebar.setAttribute('tabindex', '-1');
 
         if (overlay) {
-            overlay.classList.add('hidden');
-            overlay.setAttribute('aria-hidden', 'true');
+            overlay.classList.remove('active');
+            overlay.classList.add('fade-out');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('fade-out');
+                overlay.setAttribute('aria-hidden', 'true');
+            }, 220);
         }
 
         if (appShell) appShell.removeAttribute('inert');
         body.classList.remove('no-scroll', 'sidebar-open');
+        body.style.overflow = '';
 
         if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'false');
         if (desktopBtn) desktopBtn.setAttribute('aria-expanded', 'false');
@@ -1818,7 +1837,10 @@ window.addEventListener('resize', () => {
     if (window.innerWidth >= 768) {
         document.body.classList.remove('sidebar-open', 'no-scroll');
 
-        if (overlay) overlay.classList.add('hidden');
+        if (overlay) {
+            overlay.classList.remove('active', 'fade-out');
+            overlay.classList.add('hidden');
+        }
 
         if (sidebar) {
             sidebar.classList.remove('open');

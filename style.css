@@ -718,42 +718,42 @@ select.form-control {
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
-    z-index: 250;
-    transition: opacity 200ms var(--ease-standard);
-    opacity: 1;
-    pointer-events: auto;
-    touch-action: none;
-    overscroll-behavior: contain;
-}
-
-.sidebar-overlay.hidden {
+    z-index: 480;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 250ms var(--ease-standard);
+    transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity;
+    touch-action: none;
 }
 
+.sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+
 /* Blur background when mobile sidebar is open */
-body.sidebar-open [data-blur-target="true"],
+body.sidebar-open .main-content,
 body.sidebar-open .topbar {
     filter: blur(6px) saturate(0.9);
-    transition: filter 250ms var(--ease-standard);
-    will-change: filter;
+    transition: filter 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: filter, transform;
+    pointer-events: none;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 /* Blur sync transition for blur targets and topbar */
 [data-blur-target="true"],
 .topbar {
-    transition: filter 250ms var(--ease-standard);
+    transition: filter 250ms var(--ease-standard), transform 250ms var(--ease-standard);
 }
 
-body.sidebar-open .main-content,
-body.sidebar-open .topbar {
-    transform: translateZ(0);
-}
+
 
 body.sidebar-open {
     overflow: hidden;
-    touch-action: none;
+    overscroll-behavior: contain;
 }
 
 
@@ -768,6 +768,24 @@ body.sidebar-open {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Skip link – hidden unless focused (accessibility-friendly) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  z-index: 5000;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 12px;
 }
 
 :focus-visible {
@@ -1066,18 +1084,15 @@ body.sidebar-open {
     width: 260px;
     background: var(--color-surface);
     border-right: 1px solid var(--color-border);
-    z-index: 300;
+    z-index: 520;
     display: flex;
     flex-direction: column;
-    transition: transform 280ms var(--ease-standard), box-shadow 200ms var(--ease-standard);
+    transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: transform;
-    transform: translateX(0);
+    transform: translateX(-100%);
     backface-visibility: hidden;
 }
 
-.sidebar:not(.open) {
-    transform: translateX(0);
-}
 
 
 
@@ -1151,49 +1166,67 @@ body.sidebar-open {
 }
 
 .mobile-menu-btn {
-    display: none;
     background: none;
     border: none;
     font-size: 1.4rem;
     cursor: pointer;
     color: var(--color-text);
-    padding: 8px;
-    min-width: 44px;
-    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
-    transition: transform 200ms var(--ease-standard), color 200ms var(--ease-standard);
+    border-radius: 8px;
+    transition: transform 200ms var(--ease-standard), background 200ms ease;
+    flex-shrink: 0;
+}
+
+.mobile-menu-btn:hover {
+    background: var(--color-secondary);
+}
+
+.mobile-menu-btn i,
+.mobile-menu-btn svg {
+    display: block;
+    line-height: 1;
 }
 
 .topbar {
     background: var(--color-surface);
     border-bottom: 1px solid var(--color-border);
-    padding: var(--space-16) var(--space-24);
+    padding: 0 var(--space-24);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    height: 64px;
+    justify-content: space-between;
     position: sticky;
     top: 0;
-    z-index: 200;
+    z-index: 400;
 }
 
 .topbar-left {
-    min-height: 44px;
+    height: 64px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .topbar-left h1 {
     margin: 0;
     font-size: var(--font-size-2xl);
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
 }
 
 .topbar-right {
     display: flex;
     align-items: center;
     gap: var(--space-16);
+    height: 64px;
 }
 
 /* Search Box */
@@ -2164,38 +2197,38 @@ body.sidebar-open {
     .sidebar {
         box-shadow: var(--shadow-lg);
     }
-    
+
     .main-content {
         margin-left: 0;
     }
-    
+
     .hero-actions {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .features-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .topbar-right .search-box {
         display: none;
     }
-    
+
     .table-header,
     .holding-item {
         grid-template-columns: 1fr;
         gap: var(--space-8);
     }
-    
+
     .actions-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .market-indices,
     .portfolio-overview,
     .top-movers,
@@ -2203,9 +2236,21 @@ body.sidebar-open {
     .recent-activity {
         grid-column: span 1;
     }
-    
+
     .search-form .form-group {
         flex-direction: column;
+    }
+
+    .topbar-left {
+        padding-left: 6px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+    }
+
+    .mobile-menu-btn {
+        margin-top: 0;
+        margin-bottom: 0;
     }
 }
 /* === Realtime price animation === */
@@ -2236,5 +2281,42 @@ body.sidebar-open {
 
 /* Hamburger visual feedback (rotation + smooth state change) */
 .mobile-menu-btn.is-open {
-    transform: rotate(90deg);
+    transform: rotate(90deg) scale(1.05);
+}
+.mobile-menu-btn:active {
+    transform: scale(0.94);
+}
+@media (min-width: 769px) {
+    .sidebar {
+        transform: translateX(0) !important;
+    }
+}
+/* GPU stability & blur smoothing utility */
+.blur-layer-fix {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    will-change: filter;
+    isolation: isolate;
+}
+
+@media (max-width: 768px) {
+  body.sidebar-open .main-content,
+  body.sidebar-open .topbar {
+      pointer-events: none;
+  }
+
+  body.sidebar-open .sidebar,
+  body.sidebar-open .sidebar-overlay {
+      pointer-events: auto;
+  }
+}
+
+
+/* === HARD DESKTOP KILL: hide hamburger completely === */
+@media (min-width: 769px) {
+  .mobile-menu-btn {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
 }

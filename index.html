@@ -52,7 +52,6 @@ frame-src
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 </head>
 <body>
-    <a href="#page-title" class="skip-link">Skip to content</a>
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -229,15 +228,12 @@ frame-src
     <!-- Main Application -->
     <div id="main-app" class="hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation" aria-hidden="true" tabindex="-1">
+        <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation" aria-hidden="false" tabindex="-1">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <i class="fas fa-chart-line"></i>
                     <span>FinanceHub</span>
                 </div>
-                <button id="sidebar-toggle" class="sidebar-toggle" data-action="close-sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Close navigation">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
             <nav class="sidebar-nav">
                 <a href="javascript:void(0)" class="nav-item active" data-page="dashboard">
@@ -278,12 +274,12 @@ frame-src
         <!-- Main Content -->
         <main id="app-shell" class="main-content" data-blur-target="true">
             <!-- Top Bar -->
-            <header class="topbar" data-layer="topbar">
+            <header id="topbar" class="topbar" data-layer="topbar" data-blur-target="true">
                 <div class="topbar-left" role="group" aria-label="Primary controls" data-layout="mobile-header">
                     <button id="mobile-menu-btn" class="mobile-menu-btn" data-action="toggle-sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation menu" aria-haspopup="true">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <h1 id="page-title">Dashboard</h1>
+                    <span class="page-title-wrap"><h1 id="page-title">Dashboard</h1></span>
                 </div>
                 <div class="topbar-right">
                     <div class="search-box">
