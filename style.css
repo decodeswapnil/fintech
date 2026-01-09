@@ -1308,6 +1308,8 @@ select.form-control {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
 }
 
 .live-dot {
@@ -1315,7 +1317,7 @@ select.form-control {
     height: 8px;
     border-radius: 50%;
     background: var(--color-success);
-    box-shadow: 0 0 6px rgba(var(--color-success-rgb), 0.6);
+    box-shadow: 0 0 8px rgba(var(--color-success-rgb), 0.7);
     animation: livePulse 1.4s ease-in-out infinite;
 }
 
@@ -1324,24 +1326,29 @@ select.form-control {
 }
 
 .live-time {
+    font-family: var(--font-family-mono);
+    font-size: 0.85rem;
     opacity: 0.85;
+    transition: opacity 0.2s ease;
 }
 
 /* Estimated state */
 .live-estimated .live-dot {
     background: var(--color-warning);
-    box-shadow: 0 0 6px rgba(var(--color-warning-rgb), 0.6);
+    box-shadow: 0 0 8px rgba(var(--color-warning-rgb), 0.7);
+    animation-duration: 2s;
 }
 
 /* Offline state */
 .live-offline .live-dot {
     background: var(--color-error);
     box-shadow: 0 0 6px rgba(var(--color-error-rgb), 0.6);
+    animation: none;
 }
 
-/* Smooth second tick transition */
-.live-time {
-    transition: opacity 0.2s ease;
+/* Hover polish */
+.live-indicator:hover .live-time {
+    opacity: 1;
 }
 
 /* Dashboard Grid */
