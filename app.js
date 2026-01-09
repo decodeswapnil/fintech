@@ -581,7 +581,7 @@ async function loadMarketIndices() {
             container.appendChild(item);
         });
         
-        document.getElementById('market-last-update').textContent = `Live • ${new Date().toLocaleTimeString()}`;
+        
     } catch (error) {
         console.error('Error loading market indices:', error);
         container.innerHTML = '<div class="error">Error loading market data</div>';
@@ -1947,10 +1947,7 @@ async function fetchLivePrices() {
 
         refreshUIAfterPriceUpdate();
 
-        const tsEl = document.getElementById('market-last-update');
-        if (tsEl) {
-            tsEl.textContent = `Live • ${new Date().toLocaleTimeString()}`;
-        }
+    
     } catch (err) {
         console.error("Live price fetch failed", err);
     }
@@ -1969,49 +1966,15 @@ function stopRealtimePrices() {
 // ================================
 let liveClockInterval = null;
 
-function injectLiveClockStyles() {
-    if (document.getElementById('live-clock-styles')) return;
-
-    const style = document.createElement('style');
-    style.id = 'live-clock-styles';
-    style.textContent = `
-        .live-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            font-weight: 600;
-            letter-spacing: 0.2px;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: #ff4d4d;
-            border-radius: 50%;
-            box-shadow: 0 0 6px rgba(255, 77, 77, 0.8);
-            animation: livePulse 1.2s ease-in-out infinite;
-        }
-
-        @keyframes livePulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.4); opacity: 0.4; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .live-time {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.85rem;
-            opacity: 0.9;
-        }
-    `;
-    document.head.appendChild(style);
-}
-
 function startLiveClock() {
-    const el = document.getElementById('market-last-update');
-    if (!el) return;
+    const container = document.getElementById('market-last-update');
+    if (!container) return;
 
-    injectLiveClockStyles();
+    const indicator = container.querySelector('.live-indicator');
+    const timeEl = container.querySelector('.live-time');
+    const labelEl = container.querySelector('.live-label');
+
+    if (!indicator || !timeEl || !labelEl) return;
 
     if (liveClockInterval) clearInterval(liveClockInterval);
 
@@ -2019,14 +1982,21 @@ function startLiveClock() {
         const now = new Date();
         const time = now.toLocaleTimeString();
 
-        el.innerHTML = `
-            <span class="live-indicator">
-                <span class="live-dot"></span>
-                <span>Live</span>
-                <span class="live-time">• ${time}</span>
-            </span>
-        `;
+        timeEl.textContent = `• ${time}`;
+
+        if (!navigator.onLine) {
+            container.classList.remove('live-estimated');
+            container.classList.add('live-offline');
+            labelEl.textContent = 'Offline';
+        } else {
+            container.classList.remove('live-offline');
+            container.classList.remove('live-estimated');
+            labelEl.textContent = 'Live';
+        }
     };
+
+    window.addEventListener('offline', update);
+    window.addEventListener('online', update);
 
     update();
     liveClockInterval = setInterval(update, 1000);
