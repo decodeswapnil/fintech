@@ -36,6 +36,42 @@ let userPortfolio = [];
 let portfolioChartInstance = null;
 let allocationChartInstance = null;
 
+// Focus trap helpers for sidebar accessibility
+let lastFocusedElement = null;
+
+function trapFocus(container) {
+    const focusable = container.querySelectorAll(
+        'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+    );
+    if (!focusable.length) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    function handleTrap(e) {
+        if (e.key !== 'Tab') return;
+
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
+    }
+
+    container.__trapHandler = handleTrap;
+    container.addEventListener('keydown', handleTrap);
+    first.focus();
+}
+
+function releaseFocus(container) {
+    if (container?.__trapHandler) {
+        container.removeEventListener('keydown', container.__trapHandler);
+        delete container.__trapHandler;
+    }
+}
+
 
 // Global price cache TTL (ms)
 const PRICE_TTL = 60000; // 60 seconds cache
@@ -173,6 +209,19 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     // Check authentication state will be handled by Firebase auth state listener
     console.log('FinanceHub initialized');
+    // STEP 1: Ensure sidebar starts CLOSED on load
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    if (sidebar) {
+        sidebar.classList.remove('open');
+        sidebar.setAttribute('aria-hidden', 'true');
+        sidebar.setAttribute('tabindex', '-1');
+    }
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.setAttribute('aria-hidden', 'true');
+    }
+    document.body.classList.remove('sidebar-open', 'no-scroll');
 }
 
 function initializeTheme() {
@@ -207,10 +256,58 @@ function setupEventListeners() {
         });
     });
 
-    // Sidebar toggle
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', toggleSidebar);
+    // ================================
+    // Sidebar / Hamburger Controls
+    // ================================
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const desktopBtn = document.getElementById('sidebar-toggle');
+
+    if (mobileBtn && !mobileBtn.dataset.bound) {
+        mobileBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
+        });
+        mobileBtn.dataset.bound = "true";
+    }
+
+    if (desktopBtn && !desktopBtn.dataset.bound) {
+        desktopBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar(false);
+        });
+        desktopBtn.dataset.bound = "true";
+    }
+
+    if (overlay && !overlay.dataset.bound) {
+        overlay.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleSidebar(false);
+        });
+        overlay.dataset.bound = "true";
+    }
+
+    if (sidebar && !sidebar.dataset.bound) {
+        sidebar.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        sidebar.dataset.bound = "true";
+    }
+
+    // Global ESC key close
+    if (!window.__escHandlerBound) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar?.classList.contains('open')) {
+                    toggleSidebar(false);
+                }
+            }
+        });
+        window.__escHandlerBound = true;
     }
 
     // Password strength checker
@@ -239,25 +336,11 @@ function setupEventListeners() {
         }
     });
 
-    // Mobile sidebar controls
-    const mobileBtn = document.getElementById('mobile-menu-btn');
-    const overlay = document.getElementById('sidebar-overlay');
-
-    if (mobileBtn && !mobileBtn.dataset.bound) {
-        mobileBtn.addEventListener('click', () => toggleSidebar());
-        mobileBtn.dataset.bound = "true";
-    }
-
-    if (overlay && !overlay.dataset.bound) {
-        overlay.addEventListener('click', () => toggleSidebar(false));
-        overlay.dataset.bound = "true";
-    }
-
-    if (!window.__escHandlerBound) {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') toggleSidebar(false);
-        });
-        window.__escHandlerBound = true;
+    // Ensure mobile menu button ARIA on load
+    const mobileBtnInit = document.getElementById('mobile-menu-btn');
+    if (mobileBtnInit) {
+        mobileBtnInit.setAttribute('aria-expanded', 'false');
+        mobileBtnInit.setAttribute('aria-haspopup', 'true');
     }
 }
 
@@ -1659,6 +1742,9 @@ function toggleSidebar(forceState = null) {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const body = document.body;
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const desktopBtn = document.getElementById('sidebar-toggle');
+    const appShell = document.getElementById('app-shell');
 
     if (!sidebar) return;
 
@@ -1666,15 +1752,85 @@ function toggleSidebar(forceState = null) {
     const shouldOpen = forceState !== null ? forceState : !isOpen;
 
     if (shouldOpen) {
+        lastFocusedElement = document.activeElement;
+
         sidebar.classList.add('open');
-        if (overlay) overlay.classList.remove('hidden');
-        body.classList.add('no-scroll');
+        sidebar.setAttribute('aria-hidden', 'false');
+        sidebar.removeAttribute('tabindex');
+
+        if (overlay) {
+            overlay.classList.remove('hidden');
+            overlay.setAttribute('aria-hidden', 'false');
+        }
+
+        if (appShell) appShell.setAttribute('inert', '');
+        body.classList.add('no-scroll', 'sidebar-open');
+
+        if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'true');
+        if (desktopBtn) desktopBtn.setAttribute('aria-expanded', 'true');
+
+        // STEP 6B: UI state sync & animation polish (open)
+        if (mobileBtn) mobileBtn.classList.add('is-open');
+        if (desktopBtn) desktopBtn.classList.add('is-open');
+        document.body.classList.add('sidebar-animating');
+        setTimeout(() => document.body.classList.remove('sidebar-animating'), 300);
+
+        trapFocus(sidebar);
+
     } else {
         sidebar.classList.remove('open');
-        if (overlay) overlay.classList.add('hidden');
-        body.classList.remove('no-scroll');
+        sidebar.setAttribute('aria-hidden', 'true');
+        sidebar.setAttribute('tabindex', '-1');
+
+        if (overlay) {
+            overlay.classList.add('hidden');
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+
+        if (appShell) appShell.removeAttribute('inert');
+        body.classList.remove('no-scroll', 'sidebar-open');
+
+        if (mobileBtn) mobileBtn.setAttribute('aria-expanded', 'false');
+        if (desktopBtn) desktopBtn.setAttribute('aria-expanded', 'false');
+
+        // STEP 6B: UI state sync & animation polish (close)
+        if (mobileBtn) mobileBtn.classList.remove('is-open');
+        if (desktopBtn) desktopBtn.classList.remove('is-open');
+        document.body.classList.add('sidebar-animating');
+        setTimeout(() => document.body.classList.remove('sidebar-animating'), 300);
+
+        releaseFocus(sidebar);
+
+        if (lastFocusedElement) {
+            lastFocusedElement.focus();
+            lastFocusedElement = null;
+        }
     }
 }
+
+// STEP 3: Prevent desktop resize state desync
+window.addEventListener('resize', () => {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const desktopBtn = document.getElementById('sidebar-toggle');
+
+    if (window.innerWidth >= 768) {
+        document.body.classList.remove('sidebar-open', 'no-scroll');
+
+        if (overlay) overlay.classList.add('hidden');
+
+        if (sidebar) {
+            sidebar.classList.remove('open');
+            sidebar.setAttribute('aria-hidden', 'true');
+            sidebar.setAttribute('tabindex', '-1');
+            // STEP 6B: UI state sync & animation polish (resize)
+            if (mobileBtn) mobileBtn.classList.remove('is-open');
+            if (desktopBtn) desktopBtn.classList.remove('is-open');
+        }
+    }
+});
+
 
 function toggleUserMenu() {
     const dropdown = document.getElementById('user-dropdown');
@@ -2056,3 +2212,23 @@ function startLiveClock() {
     update();
     liveClockInterval = setInterval(update, 1000);
 }
+
+// STEP 5: Safety: block background interaction when sidebar is open
+document.addEventListener('click', (e) => {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+
+    if (sidebar.classList.contains('open')) {
+        const overlay = document.getElementById('sidebar-overlay');
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+
+        if (
+            overlay &&
+            !sidebar.contains(e.target) &&
+            e.target !== mobileBtn
+        ) {
+            e.preventDefault();
+            toggleSidebar(false);
+        }
+    }
+}, true);

@@ -52,6 +52,7 @@ frame-src
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
 </head>
 <body>
+    <a href="#page-title" class="skip-link">Skip to content</a>
     <!-- Toast Notifications -->
     <div id="toast-container" class="toast-container"></div>
 
@@ -228,38 +229,38 @@ frame-src
     <!-- Main Application -->
     <div id="main-app" class="hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
+        <aside id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation" aria-hidden="true" tabindex="-1">
             <div class="sidebar-header">
                 <div class="sidebar-brand">
                     <i class="fas fa-chart-line"></i>
                     <span>FinanceHub</span>
                 </div>
-                <button id="sidebar-toggle" class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+                <button id="sidebar-toggle" class="sidebar-toggle" data-action="close-sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Close navigation">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
             <nav class="sidebar-nav">
-                <a href="#" class="nav-item active" data-page="dashboard">
+                <a href="javascript:void(0)" class="nav-item active" data-page="dashboard">
                     <i class="fas fa-tachometer-alt"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#" class="nav-item" data-page="stocks">
+                <a href="javascript:void(0)" class="nav-item" data-page="stocks">
                     <i class="fas fa-chart-line"></i>
                     <span>Stocks</span>
                 </a>
-                <a href="#" class="nav-item" data-page="portfolio">
+                <a href="javascript:void(0)" class="nav-item" data-page="portfolio">
                     <i class="fas fa-briefcase"></i>
                     <span>Portfolio</span>
                 </a>
-                <a href="#" class="nav-item" data-page="watchlist">
+                <a href="javascript:void(0)" class="nav-item" data-page="watchlist">
                     <i class="fas fa-eye"></i>
                     <span>Watchlist</span>
                 </a>
-                <a href="#" class="nav-item" data-page="news">
+                <a href="javascript:void(0)" class="nav-item" data-page="news">
                     <i class="fas fa-newspaper"></i>
                     <span>Market News</span>
                 </a>
-                <a href="#" class="nav-item" data-page="settings">
+                <a href="javascript:void(0)" class="nav-item" data-page="settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </a>
@@ -272,14 +273,14 @@ frame-src
             </div>
         </aside>
         <!-- Mobile Sidebar Overlay -->
-        <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="toggleSidebar(false)"></div>
+        <div id="sidebar-overlay" class="sidebar-overlay hidden" data-action="close-sidebar" aria-hidden="true" tabindex="-1"></div>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main id="app-shell" class="main-content" data-blur-target="true">
             <!-- Top Bar -->
-            <header class="topbar">
-                <div class="topbar-left">
-                    <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleSidebar()" aria-label="Open navigation menu">
+            <header class="topbar" data-layer="topbar">
+                <div class="topbar-left" role="group" aria-label="Primary controls" data-layout="mobile-header">
+                    <button id="mobile-menu-btn" class="mobile-menu-btn" data-action="toggle-sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation menu" aria-haspopup="true">
                         <i class="fas fa-bars"></i>
                     </button>
                     <h1 id="page-title">Dashboard</h1>

@@ -716,18 +716,44 @@ select.form-control {
 .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    z-index: 90;
-    transition: opacity var(--duration-normal) var(--ease-standard);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    z-index: 250;
+    transition: opacity 200ms var(--ease-standard);
     opacity: 1;
     pointer-events: auto;
+    touch-action: none;
+    overscroll-behavior: contain;
 }
 
 .sidebar-overlay.hidden {
     opacity: 0;
     pointer-events: none;
-    transition: opacity 250ms ease;
+    transition: opacity 250ms var(--ease-standard);
+}
+
+/* Blur background when mobile sidebar is open */
+body.sidebar-open [data-blur-target="true"],
+body.sidebar-open .topbar {
+    filter: blur(6px) saturate(0.9);
+    transition: filter 250ms var(--ease-standard);
+    will-change: filter;
+}
+
+/* Blur sync transition for blur targets and topbar */
+[data-blur-target="true"],
+.topbar {
+    transition: filter 250ms var(--ease-standard);
+}
+
+body.sidebar-open .main-content,
+body.sidebar-open .topbar {
+    transform: translateZ(0);
+}
+
+body.sidebar-open {
+    overflow: hidden;
+    touch-action: none;
 }
 
 
@@ -1031,6 +1057,7 @@ select.form-control {
 }
 
 /* Main App Layout */
+
 .sidebar {
     position: fixed;
     left: 0;
@@ -1039,10 +1066,17 @@ select.form-control {
     width: 260px;
     background: var(--color-surface);
     border-right: 1px solid var(--color-border);
-    z-index: 200;
+    z-index: 300;
     display: flex;
     flex-direction: column;
-    transition: transform var(--duration-normal) var(--ease-standard);
+    transition: transform 280ms var(--ease-standard), box-shadow 200ms var(--ease-standard);
+    will-change: transform;
+    transform: translateX(0);
+    backface-visibility: hidden;
+}
+
+.sidebar:not(.open) {
+    transform: translateX(0);
 }
 
 
@@ -1108,7 +1142,8 @@ select.form-control {
     margin-left: 260px;
     min-height: 100vh;
     background: var(--color-background);
-    transition: margin-left var(--duration-normal) var(--ease-standard);
+    transition: margin-left var(--duration-normal) var(--ease-standard), filter 250ms var(--ease-standard);
+    will-change: transform, filter;
 }
 
 .main-content.expanded {
@@ -1122,9 +1157,13 @@ select.form-control {
     font-size: 1.4rem;
     cursor: pointer;
     color: var(--color-text);
-    padding: 10px;
+    padding: 8px;
     min-width: 44px;
     min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: transform 200ms var(--ease-standard), color 200ms var(--ease-standard);
 }
 
 .topbar {
@@ -1136,7 +1175,14 @@ select.form-control {
     align-items: center;
     position: sticky;
     top: 0;
-    z-index: 150;
+    z-index: 200;
+}
+
+.topbar-left {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .topbar-left h1 {
@@ -2064,6 +2110,7 @@ select.form-control {
     margin-right: var(--space-8);
 }
 
+/* Only one instance of .sidebar.open retained below */
 .sidebar.open {
     transform: translateX(0);
 }
@@ -2102,15 +2149,21 @@ select.form-control {
 
     .mobile-menu-btn {
         display: inline-flex;
-        align-items: center;
-        justify-content: center;
     }
 
     .sidebar {
         transform: translateX(-100%);
         box-shadow: var(--shadow-lg);
+        transition: transform 280ms var(--ease-standard);
     }
-    
+
+    .sidebar:not(.open) {
+        transform: translateX(-100%);
+    }
+    /* Ensure box-shadow is present for mobile sidebar */
+    .sidebar {
+        box-shadow: var(--shadow-lg);
+    }
     
     .main-content {
         margin-left: 0;
@@ -2163,3 +2216,25 @@ select.form-control {
 }
 .price-up { background-color: rgba(0,200,0,0.2); }
 .price-down { background-color: rgba(255,0,0,0.2); }
+
+/* Improve sidebar animation smoothness */
+.sidebar {
+    will-change: transform;
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+.sidebar-overlay:not(.hidden) {
+    animation: fadeIn 200ms ease forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Hamburger visual feedback (rotation + smooth state change) */
+.mobile-menu-btn.is-open {
+    transform: rotate(90deg);
+}
