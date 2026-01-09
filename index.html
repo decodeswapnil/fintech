@@ -312,7 +312,14 @@ frame-src
                     <div class="widget market-indices">
                         <div class="widget-header">
                             <h3>Market Indices</h3>
-                            <span id="market-last-update" class="last-update">Loading...</span>
+                            <span
+                                id="market-last-update"
+                                class="last-update live-container"
+                                title="Live local clock • No API calls • Auto-updates every second"
+                                aria-label="Live market time indicator"
+                            >
+                                Loading...
+                            </span>
                         </div>
                         <div id="market-indices-list" class="market-items">
                             <!-- Populated by JavaScript -->
