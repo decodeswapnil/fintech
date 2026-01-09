@@ -1304,12 +1304,18 @@ select.form-control {
     gap: 6px;
 }
 
+.live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .live-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--color-error);
-    box-shadow: 0 0 6px rgba(var(--color-error-rgb), 0.6);
+    background: var(--color-success);
+    box-shadow: 0 0 6px rgba(var(--color-success-rgb), 0.6);
     animation: livePulse 1.4s ease-in-out infinite;
 }
 
@@ -1321,19 +1327,16 @@ select.form-control {
     opacity: 0.85;
 }
 
-/* Estimated / Offline state */
-.live-estimated {
-    color: var(--color-warning);
+/* Estimated state */
+.live-estimated .live-dot {
+    background: var(--color-warning);
+    box-shadow: 0 0 6px rgba(var(--color-warning-rgb), 0.6);
 }
 
-.live-offline {
-    color: var(--color-error);
-}
-
-@keyframes livePulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.4); opacity: 0.4; }
-    100% { transform: scale(1); opacity: 1; }
+/* Offline state */
+.live-offline .live-dot {
+    background: var(--color-error);
+    box-shadow: 0 0 6px rgba(var(--color-error-rgb), 0.6);
 }
 
 /* Smooth second tick transition */
