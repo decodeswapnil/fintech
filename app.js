@@ -199,6 +199,11 @@ function setupEventListeners() {
             e.preventDefault();
             const page = this.dataset.page;
             showPage(page);
+
+            // Auto-close sidebar on mobile
+            if (window.innerWidth < 768) {
+                toggleSidebar(false);
+            }
         });
     });
 
@@ -233,6 +238,27 @@ function setupEventListeners() {
             userDropdown.classList.add('hidden');
         }
     });
+
+    // Mobile sidebar controls
+    const mobileBtn = document.getElementById('mobile-menu-btn');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    if (mobileBtn && !mobileBtn.dataset.bound) {
+        mobileBtn.addEventListener('click', () => toggleSidebar());
+        mobileBtn.dataset.bound = "true";
+    }
+
+    if (overlay && !overlay.dataset.bound) {
+        overlay.addEventListener('click', () => toggleSidebar(false));
+        overlay.dataset.bound = "true";
+    }
+
+    if (!window.__escHandlerBound) {
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') toggleSidebar(false);
+        });
+        window.__escHandlerBound = true;
+    }
 }
 
 // Authentication Functions
@@ -1629,12 +1655,25 @@ function updateThemeIcons() {
     });
 }
 
-function toggleSidebar() {
+function toggleSidebar(forceState = null) {
     const sidebar = document.getElementById('sidebar');
-    const mainContent = document.querySelector('.main-content');
-    
-    sidebar.classList.toggle('collapsed');
-    mainContent.classList.toggle('expanded');
+    const overlay = document.getElementById('sidebar-overlay');
+    const body = document.body;
+
+    if (!sidebar) return;
+
+    const isOpen = sidebar.classList.contains('open');
+    const shouldOpen = forceState !== null ? forceState : !isOpen;
+
+    if (shouldOpen) {
+        sidebar.classList.add('open');
+        if (overlay) overlay.classList.remove('hidden');
+        body.classList.add('no-scroll');
+    } else {
+        sidebar.classList.remove('open');
+        if (overlay) overlay.classList.add('hidden');
+        body.classList.remove('no-scroll');
+    }
 }
 
 function toggleUserMenu() {
@@ -1762,22 +1801,11 @@ async function searchStocks(query) {
 let eventSource = null;
 
 function startRealtimeStream() {
-    stopRealtimeStream();
-    eventSource = new EventSource(`${API_BASE}/stream`);
-
-    eventSource.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === "trade") {
-            bufferPriceUpdate(data.payload.symbol, data.payload.price);
-        }
-    };
+    console.warn("Realtime stream disabled.");
 }
 
 function stopRealtimeStream() {
-    if (eventSource) {
-        eventSource.close();
-        eventSource = null;
-    }
+    // no-op
 }
 
 function animatePriceChange(el, newPrice, oldPrice) {
@@ -1943,6 +1971,9 @@ async function fetchLivePrices() {
             if (cached) Object.assign(cached, stock);
             else sampleStocks.push(stock);
 
+            // Mark successful sync earlier (first success only)
+            if (!lastApiSyncAt) lastApiSyncAt = Date.now();
+
             await new Promise(r => setTimeout(r, 500)); // rate-safe delay
         }
 
@@ -1995,7 +2026,7 @@ function startLiveClock() {
             tooltip = 'You are offline. Data may be stale.';
         } else {
             const isStale =
-                lastApiSyncAt &&
+                !lastApiSyncAt ||
                 Date.now() - lastApiSyncAt > PRICE_TTL * 2;
 
             if (isStale) {
@@ -2010,6 +2041,14 @@ function startLiveClock() {
 
         container.title = tooltip;
     };
+
+    if (window.__liveClockHandlersAttached) {
+        window.removeEventListener('offline', window.__liveClockUpdate);
+        window.removeEventListener('online', window.__liveClockUpdate);
+    }
+
+    window.__liveClockUpdate = update;
+    window.__liveClockHandlersAttached = true;
 
     window.addEventListener('offline', update);
     window.addEventListener('online', update);
