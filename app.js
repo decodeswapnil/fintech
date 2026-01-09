@@ -609,6 +609,8 @@ function showLandingPage() {
 function showMainApp() {
     document.getElementById('landing-page').classList.remove('active');
     document.getElementById('main-app').classList.remove('hidden');
+    // Ensure live clock is active after login
+    startLiveClock();
 
     document.querySelectorAll('.app-page')
         .forEach(p => p.classList.remove('active'));
@@ -639,6 +641,8 @@ async function showPage(pageName) {
     switch(pageName) {
         case 'dashboard':
             loadDashboard();
+            // Re-sync live clock when returning to dashboard
+            startLiveClock();
             break;  
         case 'stocks':
             loadStocksPage();
@@ -2167,9 +2171,11 @@ function stopRealtimePrices() {
 }
 
 // ================================
-// LIVE UI CLOCK (No API usage)
+// LIVE UI CLOCK (No API usage) — HARDENED
 // ================================
 let liveClockInterval = null;
+let liveClockRunning = false;
+let liveClockLastTick = 0;
 
 function startLiveClock() {
     const container = document.getElementById('market-last-update');
@@ -2181,11 +2187,22 @@ function startLiveClock() {
 
     if (!indicator || !timeEl || !labelEl) return;
 
-    if (liveClockInterval) clearInterval(liveClockInterval);
+    // Prevent multiple intervals
+    if (liveClockRunning) return;
+    liveClockRunning = true;
 
     const update = () => {
-        const now = new Date();
-        const time = now.toLocaleTimeString();
+        const now = Date.now();
+
+        // Drift protection: force resync if > 2s gap
+        if (liveClockLastTick && Math.abs(now - liveClockLastTick - 1000) > 2000) {
+            liveClockLastTick = now;
+        } else {
+            liveClockLastTick = now;
+        }
+
+        const d = new Date(now);
+        const time = d.toLocaleTimeString();
 
         timeEl.textContent = `• ${time}`;
 
@@ -2215,19 +2232,42 @@ function startLiveClock() {
         container.title = tooltip;
     };
 
-    if (window.__liveClockHandlersAttached) {
-        window.removeEventListener('offline', window.__liveClockUpdate);
-        window.removeEventListener('online', window.__liveClockUpdate);
+    // Clear old interval if any
+    if (liveClockInterval) {
+        clearInterval(liveClockInterval);
+        liveClockInterval = null;
     }
 
-    window.__liveClockUpdate = update;
-    window.__liveClockHandlersAttached = true;
-
-    window.addEventListener('offline', update);
-    window.addEventListener('online', update);
-
     update();
-    liveClockInterval = null; // manual clock only
+    liveClockLastTick = Date.now();
+
+    liveClockInterval = setInterval(update, 1000);
+
+    // Pause clock when tab is hidden, resume when visible
+    if (!window.__liveClockVisibilityBound) {
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (liveClockInterval) {
+                    clearInterval(liveClockInterval);
+                    liveClockInterval = null;
+                }
+                liveClockRunning = false;
+            } else {
+                liveClockRunning = false;
+                startLiveClock();
+            }
+        });
+
+        window.__liveClockVisibilityBound = true;
+    }
+
+    // Online/offline refresh
+    if (!window.__liveClockNetworkBound) {
+        const networkHandler = () => update();
+        window.addEventListener('offline', networkHandler);
+        window.addEventListener('online', networkHandler);
+        window.__liveClockNetworkBound = true;
+    }
 }
 
 // STEP 5: Safety: block background interaction when sidebar is open
