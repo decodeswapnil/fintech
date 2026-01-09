@@ -1,5 +1,18 @@
-function isMobile(){
-  if (!isMobile()) return; return window.innerWidth <= 768; }
+
+// === API CALL GUARD ===
+let __lastApiCall = 0;
+function canCallAPI(minGapMs = 15000) {
+  const now = Date.now();
+  if (now - __lastApiCall < minGapMs) return false;
+  __lastApiCall = now;
+  return true;
+}
+// === MANUAL ONLY MODE ENABLED ===
+const MANUAL_ONLY = true;
+
+function isMobile() {
+  return window.innerWidth <= 768;
+}
 
 const API_BASE = "https://fmp-proxy.swapnil-fmp.workers.dev";
 
@@ -330,10 +343,9 @@ function setupEventListeners() {
     const stockSearch = document.getElementById('stock-search');
     if (stockSearch) {
         stockSearch.addEventListener('input', debounce(handleStockSearch, 300));
-        stockSearch.addEventListener('blur', function() {
-            setTimeout(() => {
-                document.getElementById('search-results').classList.add('hidden');
-            }, 200);
+        stockSearch.addEventListener('blur', function () {
+            const results = document.getElementById('search-results');
+            if (results) results.classList.add('hidden');
         });
     }
 
@@ -1470,22 +1482,10 @@ function toggleAutoRefresh() {
 }
 
 function startAutoRefresh() {
+    // Auto refresh intentionally disabled (manual-only mode)
+    // Keep function valid to avoid syntax errors
     if (refreshInterval) return;
-    
-    refreshInterval = setInterval(() => {
-        if (currentPage === 'dashboard') {
-            // Refresh indices and live prices on the dashboard periodically
-            loadMarketIndices();
-            // Also fetch live prices for visible symbols so UI stays current
-            fetchLivePrices();
-            // Top movers refresh only on dashboard open or manual refresh
-        } else if (currentPage === 'watchlist') {
-            loadWatchlist();
-        } else if (currentPage === 'portfolio') {
-            loadPortfolio();
-        }
-        // Stocks page intentionally excluded – refresh only on page open or manual refresh
-    }, 30000); // 30 seconds
+    refreshInterval = null;
 }
 
 function stopAutoRefresh() {
@@ -1785,7 +1785,7 @@ function toggleSidebar(forceState = null) {
         if (mobileBtn) mobileBtn.classList.add('is-open');
         if (desktopBtn) desktopBtn.classList.add('is-open');
         document.body.classList.add('sidebar-animating');
-        setTimeout(() => document.body.classList.remove('sidebar-animating'), 300);
+        /* AUTO-POLL DISABLED: setTimeout(() => document.body.classList.remove('sidebar-animating'), 300); */
 
         trapFocus(sidebar);
 
@@ -1795,14 +1795,9 @@ function toggleSidebar(forceState = null) {
         sidebar.setAttribute('tabindex', '-1');
 
         if (overlay) {
-            overlay.classList.remove('active');
-            overlay.classList.add('fade-out');
-
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                overlay.classList.remove('fade-out');
-                overlay.setAttribute('aria-hidden', 'true');
-            }, 220);
+            overlay.classList.remove('active', 'fade-out');
+            overlay.classList.add('hidden');
+            overlay.setAttribute('aria-hidden', 'true');
         }
 
         if (appShell) appShell.removeAttribute('inert');
@@ -1816,7 +1811,7 @@ function toggleSidebar(forceState = null) {
         if (mobileBtn) mobileBtn.classList.remove('is-open');
         if (desktopBtn) desktopBtn.classList.remove('is-open');
         document.body.classList.add('sidebar-animating');
-        setTimeout(() => document.body.classList.remove('sidebar-animating'), 300);
+        /* AUTO-POLL DISABLED: setTimeout(() => document.body.classList.remove('sidebar-animating'), 300); */
 
         releaseFocus(sidebar);
 
@@ -1990,7 +1985,7 @@ function animatePriceChange(el, newPrice, oldPrice) {
     el.classList.remove("price-up", "price-down");
     if (newPrice > oldPrice) el.classList.add("price-up");
     else if (newPrice < oldPrice) el.classList.add("price-down");
-    setTimeout(() => el.classList.remove("price-up", "price-down"), 400);
+    /* AUTO-POLL DISABLED: setTimeout(() => el.classList.remove("price-up", "price-down"), 400); */
 }
 
 
@@ -2005,7 +2000,7 @@ function animatePriceChange(el, newPrice, oldPrice) {
 // function startRealtimePrices() {
 //     if (realtimeInterval) return;
 //
-//     realtimeInterval = setInterval(() => {
+//     realtimeInterval = /* AUTO-POLL DISABLED: setInterval(() => {
 //         if (!window.sampleStocks || !Array.isArray(sampleStocks)) return;
 //
 //         sampleStocks.forEach(stock => {
@@ -2013,7 +2008,7 @@ function animatePriceChange(el, newPrice, oldPrice) {
 //
 //             // small realistic movement
 //             const delta = (Math.random() - 0.5) * 2;
-//             const newPrice = +(oldPrice + delta).toFixed(2);
+//             const newPrice = +(oldPrice + delta).toFixed(2); */
 //
 //             stock.currentPrice = newPrice;
 //             stock.change = +(newPrice - oldPrice).toFixed(2);
@@ -2152,7 +2147,7 @@ async function fetchLivePrices() {
             // Mark successful sync earlier (first success only)
             if (!lastApiSyncAt) lastApiSyncAt = Date.now();
 
-            await new Promise(r => setTimeout(r, 500)); // rate-safe delay
+            // rate-safe delay disabled intentionally (manual refresh only)
         }
 
         refreshUIAfterPriceUpdate();
@@ -2232,7 +2227,7 @@ function startLiveClock() {
     window.addEventListener('online', update);
 
     update();
-    liveClockInterval = setInterval(update, 1000);
+    liveClockInterval = null; // manual clock only
 }
 
 // STEP 5: Safety: block background interaction when sidebar is open
