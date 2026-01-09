@@ -11,7 +11,7 @@
   --color-brown-600: rgba(94, 82, 64, 1);
   --color-charcoal-700: rgba(31, 33, 33, 1);
   --color-charcoal-800: rgba(38, 40, 40, 1);
-  --color-slate-900: rgba(19, 52, 59, 1);
+  --color-slate-900: rgba(19, 52, 59, 1);   
   --color-teal-300: rgba(50, 184, 198, 1);
   --color-teal-400: rgba(45, 166, 178, 1);
   --color-teal-500: rgba(33, 128, 141, 1);
@@ -1290,6 +1290,55 @@ select.form-control {
 .last-update {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-family-mono);
+    letter-spacing: 0.2px;
+}
+
+/* === Live Indicator UI === */
+.live-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-error);
+    box-shadow: 0 0 6px rgba(var(--color-error-rgb), 0.6);
+    animation: livePulse 1.4s ease-in-out infinite;
+}
+
+.live-label {
+    font-weight: var(--font-weight-medium);
+}
+
+.live-time {
+    opacity: 0.85;
+}
+
+/* Estimated / Offline state */
+.live-estimated {
+    color: var(--color-warning);
+}
+
+.live-offline {
+    color: var(--color-error);
+}
+
+@keyframes livePulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.4; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Smooth second tick transition */
+.live-time {
+    transition: opacity 0.2s ease;
 }
 
 /* Dashboard Grid */
