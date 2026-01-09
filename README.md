@@ -104,4 +104,8 @@ AI/ML Engineer | Full Stack Developer
 
 - GitHub: https://github.com/decodeswapnil  
 - Portfolio: https://decodeswapnil.github.io  
+<<<<<<< Updated upstream
 - LinkedIn: https://linkedin.com/in/dmtoswapnil  
+=======
+- LinkedIn: https://linkedin.com/in/dmtoswapnil  
+>>>>>>> Stashed changes
