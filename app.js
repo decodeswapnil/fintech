@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     initializeTheme();
+    startLiveClock();
 
     showAppLoading(true);
 
@@ -1961,4 +1962,72 @@ function startRealtimePrices() {
 
 function stopRealtimePrices() {
     // nothing to stop
+}
+
+// ================================
+// LIVE UI CLOCK (No API usage)
+// ================================
+let liveClockInterval = null;
+
+function injectLiveClockStyles() {
+    if (document.getElementById('live-clock-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'live-clock-styles';
+    style.textContent = `
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #ff4d4d;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(255, 77, 77, 0.8);
+            animation: livePulse 1.2s ease-in-out infinite;
+        }
+
+        @keyframes livePulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.4; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .live-time {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+function startLiveClock() {
+    const el = document.getElementById('market-last-update');
+    if (!el) return;
+
+    injectLiveClockStyles();
+
+    if (liveClockInterval) clearInterval(liveClockInterval);
+
+    const update = () => {
+        const now = new Date();
+        const time = now.toLocaleTimeString();
+
+        el.innerHTML = `
+            <span class="live-indicator">
+                <span class="live-dot"></span>
+                <span>Live</span>
+                <span class="live-time">• ${time}</span>
+            </span>
+        `;
+    };
+
+    update();
+    liveClockInterval = setInterval(update, 1000);
 }
