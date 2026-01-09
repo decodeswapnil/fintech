@@ -870,43 +870,89 @@ async function searchDetailedStock() {
 
 function displayStockDetails(stock) {
     const container = document.getElementById('stock-details');
-    
     const changeClass = stock.changePercent > 0 ? 'positive' : 'negative';
     const changeSign = stock.changePercent > 0 ? '+' : '';
-    
+    const lastUpdated = stock.timestamp
+        ? new Date(stock.timestamp * 1000).toLocaleString()
+        : 'N/A';
+
     container.innerHTML = `
-        <div class="stock-header">
-            <div>
-                <div class="stock-symbol">${stock.symbol}</div>
-                <div class="stock-name">${stock.name}</div>
-            </div>
-            <button class="btn btn--sm btn--primary" onclick="addStockToWatchlist('${stock.symbol}')">
-                <i class="fas fa-plus"></i> Add to Watchlist
-            </button>
+    <div class="stock-header">
+        <div>
+            <div class="stock-symbol">${stock.symbol}</div>
+            <div class="stock-name">${stock.name}</div>
+            <div class="stock-exchange">${stock.exchange || 'N/A'}</div>
         </div>
-        <div class="stock-price">$${stock.currentPrice.toFixed(2)}</div>
-        <div class="market-change ${changeClass}">
-            ${changeSign}$${Math.abs(stock.change).toFixed(2)} (${changeSign}${Math.abs(stock.changePercent).toFixed(2)}%)
+        <button class="btn btn--sm btn--primary" onclick="addStockToWatchlist('${stock.symbol}')">
+            <i class="fas fa-plus"></i> Add to Watchlist
+        </button>
+    </div>
+
+    <div class="stock-price">$${Number(stock.currentPrice).toFixed(2)}</div>
+
+    <div class="market-change ${changeClass}">
+        ${changeSign}$${Math.abs(stock.change).toFixed(2)} (${changeSign}${Math.abs(stock.changePercent).toFixed(2)}%)
+    </div>
+
+    <div class="stock-metrics grid">
+        <div class="metric-item">
+            <span class="metric-label">Open:</span>
+            <span class="metric-value">$${stock.open?.toFixed(2) || 'N/A'}</span>
         </div>
-        <div class="stock-metrics">
-            <div class="metric-item">
-                <span class="metric-label">Volume:</span>
-                <span class="metric-value">${stock.volume?.toLocaleString() || 'N/A'}</span>
-            </div>
-            <div class="metric-item">
-                <span class="metric-label">Market Cap:</span>
-                <span class="metric-value">${stock.marketCap ? '$' + (stock.marketCap / 1000000000).toFixed(1) + 'B' : 'N/A'}</span>
-            </div>
-            <div class="metric-item">
-                <span class="metric-label">P/E Ratio:</span>
-                <span class="metric-value">${stock.pe || 'N/A'}</span>
-            </div>
-            <div class="metric-item">
-                <span class="metric-label">Sector:</span>
-                <span class="metric-value">${stock.sector || 'N/A'}</span>
-            </div>
+
+        <div class="metric-item">
+            <span class="metric-label">Previous Close:</span>
+            <span class="metric-value">$${stock.previousClose?.toFixed(2) || 'N/A'}</span>
         </div>
-    `;
+
+        <div class="metric-item">
+            <span class="metric-label">Day Low:</span>
+            <span class="metric-value">$${stock.dayLow?.toFixed(2) || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">Day High:</span>
+            <span class="metric-value">$${stock.dayHigh?.toFixed(2) || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">52W Low:</span>
+            <span class="metric-value">$${stock.yearLow?.toFixed(2) || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">52W High:</span>
+            <span class="metric-value">$${stock.yearHigh?.toFixed(2) || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">Market Cap:</span>
+            <span class="metric-value">
+                ${stock.marketCap ? '$' + (stock.marketCap / 1_000_000_000).toFixed(2) + ' B' : 'N/A'}
+            </span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">Volume:</span>
+            <span class="metric-value">${stock.volume?.toLocaleString() || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">50D Avg:</span>
+            <span class="metric-value">$${stock.priceAvg50?.toFixed(2) || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">200D Avg:</span>
+            <span class="metric-value">$${stock.priceAvg200?.toFixed(2) || 'N/A'}</span>
+        </div>
+
+        <div class="metric-item">
+            <span class="metric-label">Last Updated:</span>
+            <span class="metric-value">${lastUpdated}</span>
+        </div>
+    </div>
+`;
 }
 
 function showStockDetails(symbol) {
@@ -1403,16 +1449,33 @@ async function fetchStockQuote(symbol) {
             return cached || null;
         }
 
-        const rawChangePercent = source.changesPercentage ?? source.changePercentage ?? source.changesPercentage ?? 0;
         const stock = {
             symbol: source.symbol,
             name: source.name,
+            exchange: source.exchange || source.exchangeShortName || null,
+
             currentPrice: Number(source.price),
             change: Number(source.change || 0),
-            changePercent: Number(rawChangePercent || 0),
-            volume: source.volume,
-            marketCap: source.marketCap,
-            pe: source.pe,
+
+            changePercent: Number(
+                (source.changesPercentage ?? source.changePercentage ?? 0)
+            ),
+
+            open: Number(source.open ?? null),
+            previousClose: Number(source.previousClose ?? null),
+            dayLow: Number(source.dayLow ?? null),
+            dayHigh: Number(source.dayHigh ?? null),
+            yearLow: Number(source.yearLow ?? null),
+            yearHigh: Number(source.yearHigh ?? null),
+
+            priceAvg50: Number(source.priceAvg50 ?? null),
+            priceAvg200: Number(source.priceAvg200 ?? null),
+
+            volume: source.volume ?? null,
+            marketCap: source.marketCap ?? null,
+            pe: source.pe ?? null,
+
+            timestamp: source.timestamp ?? null,
             _updatedAt: Date.now()
         };
 
@@ -1845,16 +1908,33 @@ async function fetchLivePrices() {
 
             const oldPrice = cached?.currentPrice || source.price;
 
-            const rawChangePercent = source.changesPercentage ?? source.changePercentage ?? 0;
             const stock = {
                 symbol: source.symbol,
                 name: source.name,
+                exchange: source.exchange || source.exchangeShortName || null,
+
                 currentPrice: Number(source.price),
                 change: Number(source.change || 0),
-                changePercent: Number(rawChangePercent || 0),
-                volume: source.volume,
-                marketCap: source.marketCap,
-                pe: source.pe,
+
+                changePercent: Number(
+                    (source.changesPercentage ?? source.changePercentage ?? 0)
+                ),
+
+                open: Number(source.open ?? null),
+                previousClose: Number(source.previousClose ?? null),
+                dayLow: Number(source.dayLow ?? null),
+                dayHigh: Number(source.dayHigh ?? null),
+                yearLow: Number(source.yearLow ?? null),
+                yearHigh: Number(source.yearHigh ?? null),
+
+                priceAvg50: Number(source.priceAvg50 ?? null),
+                priceAvg200: Number(source.priceAvg200 ?? null),
+
+                volume: source.volume ?? null,
+                marketCap: source.marketCap ?? null,
+                pe: source.pe ?? null,
+
+                timestamp: source.timestamp ?? null,
                 _updatedAt: Date.now()
             };
 
