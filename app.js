@@ -1461,15 +1461,15 @@ async function fetchStockQuote(symbol) {
                 (source.changesPercentage ?? source.changePercentage ?? 0)
             ),
 
-            open: Number(source.open ?? null),
-            previousClose: Number(source.previousClose ?? null),
-            dayLow: Number(source.dayLow ?? null),
-            dayHigh: Number(source.dayHigh ?? null),
-            yearLow: Number(source.yearLow ?? null),
-            yearHigh: Number(source.yearHigh ?? null),
+            open: typeof source.open === 'number' ? source.open : null,
+            previousClose: typeof source.previousClose === 'number' ? source.previousClose : null,
+            dayLow: typeof source.dayLow === 'number' ? source.dayLow : null,
+            dayHigh: typeof source.dayHigh === 'number' ? source.dayHigh : null,
+            yearLow: typeof source.yearLow === 'number' ? source.yearLow : null,
+            yearHigh: typeof source.yearHigh === 'number' ? source.yearHigh : null,
 
-            priceAvg50: Number(source.priceAvg50 ?? null),
-            priceAvg200: Number(source.priceAvg200 ?? null),
+            priceAvg50: typeof source.priceAvg50 === 'number' ? source.priceAvg50 : null,
+            priceAvg200: typeof source.priceAvg200 === 'number' ? source.priceAvg200 : null,
 
             volume: source.volume ?? null,
             marketCap: source.marketCap ?? null,
@@ -1920,15 +1920,15 @@ async function fetchLivePrices() {
                     (source.changesPercentage ?? source.changePercentage ?? 0)
                 ),
 
-                open: Number(source.open ?? null),
-                previousClose: Number(source.previousClose ?? null),
-                dayLow: Number(source.dayLow ?? null),
-                dayHigh: Number(source.dayHigh ?? null),
-                yearLow: Number(source.yearLow ?? null),
-                yearHigh: Number(source.yearHigh ?? null),
+                open: typeof source.open === 'number' ? source.open : null,
+                previousClose: typeof source.previousClose === 'number' ? source.previousClose : null,
+                dayLow: typeof source.dayLow === 'number' ? source.dayLow : null,
+                dayHigh: typeof source.dayHigh === 'number' ? source.dayHigh : null,
+                yearLow: typeof source.yearLow === 'number' ? source.yearLow : null,
+                yearHigh: typeof source.yearHigh === 'number' ? source.yearHigh : null,
 
-                priceAvg50: Number(source.priceAvg50 ?? null),
-                priceAvg200: Number(source.priceAvg200 ?? null),
+                priceAvg50: typeof source.priceAvg50 === 'number' ? source.priceAvg50 : null,
+                priceAvg200: typeof source.priceAvg200 === 'number' ? source.priceAvg200 : null,
 
                 volume: source.volume ?? null,
                 marketCap: source.marketCap ?? null,
