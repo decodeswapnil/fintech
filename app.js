@@ -1,18 +1,5 @@
-
-// === API CALL GUARD ===
-let __lastApiCall = 0;
-function canCallAPI(minGapMs = 15000) {
-  const now = Date.now();
-  if (now - __lastApiCall < minGapMs) return false;
-  __lastApiCall = now;
-  return true;
-}
-// === MANUAL ONLY MODE ENABLED ===
-const MANUAL_ONLY = true;
-
-function isMobile() {
-  return window.innerWidth <= 768;
-}
+function isMobile(){
+  if (!isMobile()) return; return window.innerWidth <= 768; }
 
 const API_BASE = "https://fmp-proxy.swapnil-fmp.workers.dev";
 
@@ -343,9 +330,10 @@ function setupEventListeners() {
     const stockSearch = document.getElementById('stock-search');
     if (stockSearch) {
         stockSearch.addEventListener('input', debounce(handleStockSearch, 300));
-        stockSearch.addEventListener('blur', function () {
-            const results = document.getElementById('search-results');
-            if (results) results.classList.add('hidden');
+        stockSearch.addEventListener('blur', function() {
+            setTimeout(() => {
+                document.getElementById('search-results').classList.add('hidden');
+            }, 200);
         });
     }
 
@@ -609,8 +597,6 @@ function showLandingPage() {
 function showMainApp() {
     document.getElementById('landing-page').classList.remove('active');
     document.getElementById('main-app').classList.remove('hidden');
-    // Ensure live clock is active after login
-    startLiveClock();
 
     document.querySelectorAll('.app-page')
         .forEach(p => p.classList.remove('active'));
@@ -641,8 +627,6 @@ async function showPage(pageName) {
     switch(pageName) {
         case 'dashboard':
             loadDashboard();
-            // Re-sync live clock when returning to dashboard
-            startLiveClock();
             break;  
         case 'stocks':
             loadStocksPage();
@@ -1486,10 +1470,22 @@ function toggleAutoRefresh() {
 }
 
 function startAutoRefresh() {
-    // Auto refresh intentionally disabled (manual-only mode)
-    // Keep function valid to avoid syntax errors
     if (refreshInterval) return;
-    refreshInterval = null;
+    
+    refreshInterval = setInterval(() => {
+        if (currentPage === 'dashboard') {
+            // Refresh indices and live prices on the dashboard periodically
+            loadMarketIndices();
+            // Also fetch live prices for visible symbols so UI stays current
+            fetchLivePrices();
+            // Top movers refresh only on dashboard open or manual refresh
+        } else if (currentPage === 'watchlist') {
+            loadWatchlist();
+        } else if (currentPage === 'portfolio') {
+            loadPortfolio();
+        }
+        // Stocks page intentionally excluded – refresh only on page open or manual refresh
+    }, 30000); // 30 seconds
 }
 
 function stopAutoRefresh() {
@@ -1789,7 +1785,7 @@ function toggleSidebar(forceState = null) {
         if (mobileBtn) mobileBtn.classList.add('is-open');
         if (desktopBtn) desktopBtn.classList.add('is-open');
         document.body.classList.add('sidebar-animating');
-        /* AUTO-POLL DISABLED: setTimeout(() => document.body.classList.remove('sidebar-animating'), 300); */
+        setTimeout(() => document.body.classList.remove('sidebar-animating'), 300);
 
         trapFocus(sidebar);
 
@@ -1799,9 +1795,14 @@ function toggleSidebar(forceState = null) {
         sidebar.setAttribute('tabindex', '-1');
 
         if (overlay) {
-            overlay.classList.remove('active', 'fade-out');
-            overlay.classList.add('hidden');
-            overlay.setAttribute('aria-hidden', 'true');
+            overlay.classList.remove('active');
+            overlay.classList.add('fade-out');
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('fade-out');
+                overlay.setAttribute('aria-hidden', 'true');
+            }, 220);
         }
 
         if (appShell) appShell.removeAttribute('inert');
@@ -1815,7 +1816,7 @@ function toggleSidebar(forceState = null) {
         if (mobileBtn) mobileBtn.classList.remove('is-open');
         if (desktopBtn) desktopBtn.classList.remove('is-open');
         document.body.classList.add('sidebar-animating');
-        /* AUTO-POLL DISABLED: setTimeout(() => document.body.classList.remove('sidebar-animating'), 300); */
+        setTimeout(() => document.body.classList.remove('sidebar-animating'), 300);
 
         releaseFocus(sidebar);
 
@@ -1989,7 +1990,7 @@ function animatePriceChange(el, newPrice, oldPrice) {
     el.classList.remove("price-up", "price-down");
     if (newPrice > oldPrice) el.classList.add("price-up");
     else if (newPrice < oldPrice) el.classList.add("price-down");
-    /* AUTO-POLL DISABLED: setTimeout(() => el.classList.remove("price-up", "price-down"), 400); */
+    setTimeout(() => el.classList.remove("price-up", "price-down"), 400);
 }
 
 
@@ -2004,7 +2005,7 @@ function animatePriceChange(el, newPrice, oldPrice) {
 // function startRealtimePrices() {
 //     if (realtimeInterval) return;
 //
-//     realtimeInterval = /* AUTO-POLL DISABLED: setInterval(() => {
+//     realtimeInterval = setInterval(() => {
 //         if (!window.sampleStocks || !Array.isArray(sampleStocks)) return;
 //
 //         sampleStocks.forEach(stock => {
@@ -2012,7 +2013,7 @@ function animatePriceChange(el, newPrice, oldPrice) {
 //
 //             // small realistic movement
 //             const delta = (Math.random() - 0.5) * 2;
-//             const newPrice = +(oldPrice + delta).toFixed(2); */
+//             const newPrice = +(oldPrice + delta).toFixed(2);
 //
 //             stock.currentPrice = newPrice;
 //             stock.change = +(newPrice - oldPrice).toFixed(2);
@@ -2151,7 +2152,7 @@ async function fetchLivePrices() {
             // Mark successful sync earlier (first success only)
             if (!lastApiSyncAt) lastApiSyncAt = Date.now();
 
-            // rate-safe delay disabled intentionally (manual refresh only)
+            await new Promise(r => setTimeout(r, 500)); // rate-safe delay
         }
 
         refreshUIAfterPriceUpdate();
@@ -2171,11 +2172,9 @@ function stopRealtimePrices() {
 }
 
 // ================================
-// LIVE UI CLOCK (No API usage) — HARDENED
+// LIVE UI CLOCK (No API usage)
 // ================================
 let liveClockInterval = null;
-let liveClockRunning = false;
-let liveClockLastTick = 0;
 
 function startLiveClock() {
     const container = document.getElementById('market-last-update');
@@ -2187,22 +2186,11 @@ function startLiveClock() {
 
     if (!indicator || !timeEl || !labelEl) return;
 
-    // Prevent multiple intervals
-    if (liveClockRunning) return;
-    liveClockRunning = true;
+    if (liveClockInterval) clearInterval(liveClockInterval);
 
     const update = () => {
-        const now = Date.now();
-
-        // Drift protection: force resync if > 2s gap
-        if (liveClockLastTick && Math.abs(now - liveClockLastTick - 1000) > 2000) {
-            liveClockLastTick = now;
-        } else {
-            liveClockLastTick = now;
-        }
-
-        const d = new Date(now);
-        const time = d.toLocaleTimeString();
+        const now = new Date();
+        const time = now.toLocaleTimeString();
 
         timeEl.textContent = `• ${time}`;
 
@@ -2232,42 +2220,19 @@ function startLiveClock() {
         container.title = tooltip;
     };
 
-    // Clear old interval if any
-    if (liveClockInterval) {
-        clearInterval(liveClockInterval);
-        liveClockInterval = null;
+    if (window.__liveClockHandlersAttached) {
+        window.removeEventListener('offline', window.__liveClockUpdate);
+        window.removeEventListener('online', window.__liveClockUpdate);
     }
+
+    window.__liveClockUpdate = update;
+    window.__liveClockHandlersAttached = true;
+
+    window.addEventListener('offline', update);
+    window.addEventListener('online', update);
 
     update();
-    liveClockLastTick = Date.now();
-
     liveClockInterval = setInterval(update, 1000);
-
-    // Pause clock when tab is hidden, resume when visible
-    if (!window.__liveClockVisibilityBound) {
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                if (liveClockInterval) {
-                    clearInterval(liveClockInterval);
-                    liveClockInterval = null;
-                }
-                liveClockRunning = false;
-            } else {
-                liveClockRunning = false;
-                startLiveClock();
-            }
-        });
-
-        window.__liveClockVisibilityBound = true;
-    }
-
-    // Online/offline refresh
-    if (!window.__liveClockNetworkBound) {
-        const networkHandler = () => update();
-        window.addEventListener('offline', networkHandler);
-        window.addEventListener('online', networkHandler);
-        window.__liveClockNetworkBound = true;
-    }
 }
 
 // STEP 5: Safety: block background interaction when sidebar is open
@@ -2289,3 +2254,172 @@ document.addEventListener('click', (e) => {
         }
     }
 }, true);
+
+
+// ================================
+// FIREBASE STOCK CACHE LAYER (US MARKET ONLY)
+// ================================
+
+function isUSMarketOpen() {
+    const now = new Date();
+    const day = now.getUTCDay(); // 0=Sun
+    if (day === 0 || day === 6) return false;
+
+    // Convert to ET roughly (UTC-5 / UTC-4 not handled perfectly, acceptable for now)
+    const hours = now.getUTCHours() - 5;
+    const minutes = now.getUTCMinutes();
+    const totalMinutes = hours * 60 + minutes;
+
+    const open = 9 * 60 + 30; // 9:30 AM
+    const close = 16 * 60;    // 4:00 PM
+
+    return totalMinutes >= open && totalMinutes <= close;
+}
+
+function getUSTradingDate() {
+    const d = new Date();
+    const day = d.getUTCDay();
+    if (day === 0) d.setUTCDate(d.getUTCDate() - 2); // Sunday → Friday
+    if (day === 6) d.setUTCDate(d.getUTCDate() - 1); // Saturday → Friday
+    return d.toISOString().split("T")[0];
+}
+
+async function getStockFromCache(symbol) {
+    try {
+        const ref = db.collection("stocks_cache").doc(symbol);
+        const snap = await ref.get();
+        if (!snap.exists) return null;
+        return snap.data();
+    } catch (e) {
+        console.warn("Cache read failed:", e);
+        return null;
+    }
+}
+
+async function setStockToCache(symbol, payload) {
+    try {
+        const ref = db.collection("stocks_cache").doc(symbol);
+        await ref.set({
+            symbol,
+            market: "US",
+            data: payload,
+            lastTradingDate: getUSTradingDate(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (e) {
+        console.warn("Cache write failed:", e);
+    }
+}
+
+// OVERRIDE: Cached version
+async function fetchStockQuote(symbol, force = false) {
+    symbol = symbol.toUpperCase().trim();
+    if (!/^[A-Z]{1,6}$/.test(symbol)) return null;
+
+    const today = getUSTradingDate();
+    const marketOpen = isUSMarketOpen();
+
+    const cachedDoc = await getStockFromCache(symbol);
+
+    if (cachedDoc && cachedDoc.data && !force) {
+        if (!marketOpen && cachedDoc.lastTradingDate === today) {
+            return cachedDoc.data;
+        }
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/quote?symbol=${encodeURIComponent(symbol)}`);
+        if (!res.ok) return cachedDoc?.data || null;
+
+        const api = await res.json();
+        const source = Array.isArray(api) ? api[0] : api;
+        if (!source || !source.symbol) return cachedDoc?.data || null;
+
+        const stock = {
+            symbol: source.symbol,
+            name: source.name,
+            exchange: source.exchange || source.exchangeShortName || null,
+            currentPrice: Number(source.price),
+            change: Number(source.change || 0),
+            changePercent: Number((source.changesPercentage ?? source.changePercentage ?? 0)),
+            open: source.open ?? null,
+            previousClose: source.previousClose ?? null,
+            dayLow: source.dayLow ?? null,
+            dayHigh: source.dayHigh ?? null,
+            yearLow: source.yearLow ?? null,
+            yearHigh: source.yearHigh ?? null,
+            priceAvg50: source.priceAvg50 ?? null,
+            priceAvg200: source.priceAvg200 ?? null,
+            volume: source.volume ?? null,
+            marketCap: source.marketCap ?? null,
+            pe: source.pe ?? null,
+            timestamp: source.timestamp ?? null,
+            _updatedAt: Date.now()
+        };
+
+        await setStockToCache(symbol, stock);
+        return stock;
+
+    } catch (e) {
+        console.error("Cached fetch failed:", e);
+        return cachedDoc?.data || null;
+    }
+}
+
+
+
+/* ================================
+   FIREBASE US_INDICES CACHE LAYER
+   ================================ */
+
+async function getIndicesFromCache() {
+    try {
+        const ref = db.collection("stocks_cache").doc("US_INDICES");
+        const snap = await ref.get();
+        if (!snap.exists) return null;
+        return snap.data();
+    } catch (e) {
+        console.warn("Indices cache read failed:", e);
+        return null;
+    }
+}
+
+async function setIndicesToCache(payload) {
+    try {
+        const ref = db.collection("stocks_cache").doc("US_INDICES");
+        await ref.set({
+            market: "US",
+            data: payload,
+            lastTradingDate: getUSTradingDate(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+    } catch (e) {
+        console.warn("Indices cache write failed:", e);
+    }
+}
+
+// OVERRIDE: Cached version of fetchMarketIndices
+const _originalFetchMarketIndices = fetchMarketIndices;
+fetchMarketIndices = async function(force = false) {
+    const today = getUSTradingDate();
+    const marketOpen = isUSMarketOpen();
+
+    const cached = await getIndicesFromCache();
+    if (cached && cached.data && !force) {
+        if (!marketOpen && cached.lastTradingDate === today) {
+            return cached.data;
+        }
+    }
+
+    try {
+        const fresh = await _originalFetchMarketIndices(true);
+        if (fresh) {
+            await setIndicesToCache(fresh);
+            return fresh;
+        }
+        return cached?.data || marketIndices;
+    } catch (e) {
+        console.warn("Remote indices fetch failed, using cache:", e);
+        return cached?.data || marketIndices;
+    }
+};
