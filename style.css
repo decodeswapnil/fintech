@@ -137,6 +137,13 @@
   --duration-normal: 250ms;
   --ease-standard: cubic-bezier(0.16, 1, 0.3, 1);
 
+  /* Hover System */
+  --hover-bg-soft: rgba(255, 255, 255, 0.04);
+  --hover-bg-soft-dark: rgba(0, 0, 0, 0.18);
+  --hover-scale: 1.015;
+  --hover-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  --hover-transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Layout */
   --container-sm: 640px;
   --container-md: 768px;
@@ -641,6 +648,15 @@ select.form-control {
   }
 }
 
+.soft-hover {
+  transition: var(--hover-transition);
+}
+
+.soft-hover:hover {
+  transform: scale(var(--hover-scale));
+  box-shadow: var(--hover-shadow);
+}
+
 /* Utility classes */
 .flex {
   display: flex;
@@ -723,7 +739,6 @@ select.form-control {
     pointer-events: none;
     transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: opacity;
-    touch-action: none;
 }
 
 .sidebar-overlay.active {
@@ -738,7 +753,6 @@ body.sidebar-open .topbar {
     filter: blur(6px) saturate(0.9);
     transition: filter 260ms cubic-bezier(0.22, 1, 0.36, 1), transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
     will-change: filter, transform;
-    pointer-events: none;
     backface-visibility: hidden;
     transform: translateZ(0);
 }
@@ -753,6 +767,21 @@ body.sidebar-open .topbar {
 
 body.sidebar-open {
     overflow: hidden;
+}
+
+/* Allow scrolling on mobile even when sidebar is open */
+@media (max-width: 768px) {
+  body.sidebar-open {
+    overflow: auto;
+    position: fixed;
+    width: 100%;
+  }
+}
+
+/* Allow sidebar itself to scroll */
+.sidebar {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
 }
 
@@ -1193,11 +1222,17 @@ body.sidebar-open {
     color: var(--color-text);
 }
 
+/* === Step 1c: Premium Active / Selected State === */
 .nav-item.active {
-    background: rgba(var(--color-teal-300-rgb), 0.14);
+    background: linear-gradient(
+      90deg,
+      rgba(var(--color-teal-300-rgb), 0.18),
+      rgba(var(--color-teal-300-rgb), 0.06)
+    );
     color: var(--color-primary);
     font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--color-primary);
+    box-shadow: inset 3px 0 0 var(--color-primary),
+                0 6px 18px rgba(0, 0, 0, 0.08);
     padding-left: 19px;
     min-height: 44px;
 }
@@ -1213,6 +1248,9 @@ body.sidebar-open {
     background: var(--color-background);
     transition: margin-left var(--duration-normal) var(--ease-standard), filter 250ms var(--ease-standard);
     will-change: transform, filter;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
 }
 
 .main-content.expanded {
@@ -1239,7 +1277,13 @@ body.sidebar-open {
 }
 
 .mobile-menu-btn:hover {
-    background: var(--color-secondary);
+    background: rgba(var(--color-teal-500-rgb), 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.mobile-menu-btn:active {
+    transform: scale(0.94);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .mobile-menu-btn i,
@@ -1414,7 +1458,7 @@ body.sidebar-open {
 }
 
 .user-dropdown a:hover {
-    background: var(--color-secondary);
+    background: rgba(var(--color-teal-500-rgb), 0.08);
 }
 
 /* Page Styles */
@@ -2391,17 +2435,7 @@ body.sidebar-open {
     isolation: isolate;
 }
 
-@media (max-width: 768px) {
-  body.sidebar-open .main-content,
-  body.sidebar-open .topbar {
-      pointer-events: none;
-  }
 
-  body.sidebar-open .sidebar,
-  body.sidebar-open .sidebar-overlay {
-      pointer-events: auto;
-  }
-}
 
 
 /* === HARD DESKTOP KILL: hide hamburger completely === */
@@ -2440,5 +2474,302 @@ body.sidebar-open {
   .live-dot,
   .live-time {
     animation: none !important;
+  }
+}
+/* === Step 1b: Premium Soft Hover System (Rows, Lists, Sidebar, Cards) === */
+.nav-item,
+.search-result-item,
+.stock-item,
+.watchlist-item,
+.mover-item,
+.activity-item,
+.action-btn,
+.feature-card {
+  transition: var(--hover-transition);
+  will-change: transform, box-shadow, background;
+}
+
+/* Soft hover behavior */
+.nav-item:hover,
+.search-result-item:hover,
+.stock-item:hover,
+.watchlist-item:hover,
+.mover-item:hover,
+.activity-item:hover,
+.action-btn:hover,
+.feature-card:hover {
+  background: var(--hover-bg-soft);
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Active/pressed feedback */
+.nav-item:active,
+.search-result-item:active,
+.stock-item:active,
+.watchlist-item:active,
+.mover-item:active,
+.activity-item:active,
+.action-btn:active,
+.feature-card:active {
+  transform: scale(0.985);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+/* Prevent ugly block look on rows */
+.nav-item,
+.search-result-item,
+.stock-item,
+.watchlist-item,
+.mover-item,
+.activity-item {
+  border-radius: 10px;
+  margin-left: 6px;
+  margin-right: 6px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+/* === Step 1c: Active / Selected State Polish === */
+.nav-item.active:hover,
+.search-result-item.active:hover,
+.stock-item.active:hover,
+.watchlist-item.active:hover,
+.mover-item.active:hover,
+.activity-item.active:hover {
+  transform: none;
+  box-shadow: inset 3px 0 0 var(--color-primary),
+              0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* === Step 1c: Focus-visible Premium Treatment === */
+.nav-item:focus-visible,
+.search-result-item:focus-visible,
+.stock-item:focus-visible,
+.watchlist-item:focus-visible,
+.mover-item:focus-visible,
+.activity-item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--color-teal-500-rgb), 0.35);
+}
+/* === Step 1d: Premium Icon + Topbar Hover System === */
+.topbar button,
+.topbar a,
+.theme-toggle,
+.user-avatar {
+    transition: background 160ms var(--ease-standard),
+                transform 160ms var(--ease-standard),
+                box-shadow 160ms var(--ease-standard),
+                color 120ms var(--ease-standard);
+    border-radius: 10px;
+}
+
+.topbar button:hover,
+.topbar a:hover,
+.theme-toggle:hover,
+.user-avatar:hover {
+    background: rgba(var(--color-teal-500-rgb), 0.06);
+    transform: translateY(-1px);
+}
+
+.topbar button:active,
+.topbar a:active,
+.theme-toggle:active,
+.user-avatar:active {
+    transform: scale(0.96);
+}
+
+/* Icon stability */
+.topbar i,
+.topbar svg,
+.mobile-menu-btn i,
+.mobile-menu-btn svg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.topbar button:focus-visible,
+.theme-toggle:focus-visible,
+.user-avatar:focus-visible,
+.mobile-menu-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(var(--color-teal-500-rgb), 0.35);
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-btn:hover,
+  .mobile-menu-btn:active {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
+
+.topbar-left h1:hover {
+    opacity: 1;
+}
+
+/* === Step 1e: Micro-interactions + Sidebar Row Refinement === */
+
+/* Remove scale-jump for navigation rows (keep depth, not zoom) */
+.nav-item,
+.search-result-item,
+.stock-item,
+.watchlist-item,
+.mover-item,
+.activity-item {
+  transform: none !important;
+}
+
+/* Replace scale with subtle lift */
+.nav-item:hover,
+.search-result-item:hover,
+.stock-item:hover,
+.watchlist-item:hover,
+.mover-item:hover,
+.activity-item:hover {
+  transform: translateY(-1px);
+}
+
+/* Sidebar row indicator bar (soft, premium) */
+.nav-item::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 4px;
+  height: 60%;
+  border-radius: 4px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-primary),
+    rgba(var(--color-teal-500-rgb), 0.4)
+  );
+  transition: transform 180ms var(--ease-standard),
+              opacity 180ms var(--ease-standard);
+  opacity: 0;
+}
+
+.nav-item:hover::before {
+  transform: translateY(-50%) scaleY(1);
+  opacity: 1;
+}
+
+.nav-item.active::before {
+  transform: translateY(-50%) scaleY(1);
+  opacity: 1;
+}
+
+/* Cursor polish */
+.nav-item,
+.search-result-item,
+.stock-item,
+.watchlist-item,
+.mover-item,
+.activity-item,
+.action-btn {
+  cursor: pointer;
+}
+
+/* Micro fade for text + icon */
+.nav-item *,
+.search-result-item *,
+.stock-item *,
+.watchlist-item *,
+.mover-item *,
+.activity-item * {
+  transition: opacity 160ms var(--ease-standard);
+}
+
+.nav-item:hover *,
+.search-result-item:hover *,
+.stock-item:hover *,
+.watchlist-item:hover *,
+.mover-item:hover *,
+.activity-item:hover * {
+  opacity: 1;
+}
+
+/* Reduce visual noise on active items */
+.nav-item.active:hover {
+  transform: none;
+}
+
+/* Motion safety */
+@media (prefers-reduced-motion: reduce) {
+  .nav-item,
+  .search-result-item,
+  .stock-item,
+  .watchlist-item,
+  .mover-item,
+  .activity-item,
+  .action-btn {
+    transition: none !important;
+  }
+
+  .nav-item::before {
+    transition: none !important;
+  }
+}
+/* === MOBILE SCROLL FIX === */
+@media (max-width: 768px) {
+  body {
+    position: relative;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .main-content {
+    overflow-y: auto;
+    height: auto;
+  }
+
+  .sidebar-overlay {
+    pointer-events: auto;
+  }
+}
+
+
+
+
+/* === MOBILE TOUCH SCROLL FIX (HARD OVERRIDE) === */
+@media (max-width: 768px) {
+  html, body {
+    height: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
+    position: static !important;
+  }
+
+  body.sidebar-open {
+    position: static !important;
+    overflow-y: auto !important;
+  }
+
+  .main-content {
+    overflow-y: auto !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .sidebar {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  /* Overlay must not block scroll gestures */
+  .sidebar-overlay {
+    pointer-events: none !important;
+    touch-action: pan-y;
+  }
+
+  .sidebar.open {
+    pointer-events: auto;
   }
 }
